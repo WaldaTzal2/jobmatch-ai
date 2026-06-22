@@ -1,0 +1,6 @@
+id_vaga,titulo_vaga,descricao_vaga,skills_exigidas,salario_real
+101,Cientista de Dados,"Procuramos especialista em Python, Machine Learning, SQL e modelos preditivos.","python, machine learning, sql",12000
+102,Engenheiro de Software,"Desenvolvimento de sistemas robustos usando Java, Spring Boot, AWS e Docker.","java, spring boot, aws, docker",10500
+103,Analista de BI,"Criação de dashboards impactantes com Power BI, SQL, modelagem de dados e ETL.","power bi, sql, etl",7500
+104,Desenvolvedor Frontend,"Desenvolvimento de interfaces modernas usando React, JavaScript, HTML5 e CSS3.","react, javascript, html, css",8000
+105,Engenheiro de IA,"Atuar com modelos de Linguagem de Larga Escala LLM, Python, PyTorch e NLP avançado.","python, pytorch, nlp, llm",15000

@@ -1,0 +1,84 @@
+
+Quais são as obrigações de um agente de tratamento de pequeno porte?
+
+Quais as facilidades para microempresas?
+
+Me dê uma receita de bolo de chocolate
+
+
+
+
+Api Grok
+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
+
+
+https://colab.research.google.com/drive/1ehRdU_g4T3Ss_9mtja9A0dqaAqpZIZeX#scrollTo=54_7XqZN6iA9
+
+https://share.streamlit.io/
+
+https://template-portfolio-kbbvshprxcktdokqe2hww4.streamlit.app/
+
+https://github.com/WaldaTzal2/template-portfolio/blob/main/app.py
+
+app.py no VSCode
+
+Documentando no README.md
+
+-----------------------------------
+cd Desktop\template-portfolio
+
+
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+.venv\Scripts\Activate.ps1
+
+
+python -m pytest tests/test_smoke.py.
+
+
+
+streamlit run app.py
+--------------------------------------
+
+Salve o arquivo e faça o git add, git commit e git push final.
+
+git status
+git add app.py
+git commit -m "feat: adicionar diagnóstico de chave de API"
+git push origin main
+
+--------------------
+
+
+
+
+
+Assim que a janela abrir no seu navegador, faça o teste de fogo:
+
+Pergunte algo sobre a LGPD (ex: "Quais as facilidades para microempresas?").
+
+Faça uma pergunta fora de escopo (ex: "Me dê uma receita de bolo de chocolate") para ver o seu Guarda-reio funcionando perfeitamente e bloqueando a resposta!
+
+Repita a primeira pergunta para ver o painel do lado direito ativar o [CACHE HIT] e provar a sua redução de custos.
+
+---------------------------
+
+Próximo passo (O Deploy do seu App):
+Assim que o comando acima terminar com sucesso (aparecer algo como branch 'main' set up to track 'remote branch 'main' from 'origin'), o código estará no GitHub.
+
+Agora, vá ao site do Streamlit Cloud e siga aquele passo a passo de "Deploy":
+
+Selecione o repositório template-portfolio.
+
+Configure o app.py como arquivo principal.
+
+Clique em Advanced settings e cole a sua GEMINI_API_KEY na área de Secrets.
+
+Clique em Deploy.
+
+Assim que terminar, o Streamlit vai te dar o link público do seu app! Quando ele aparecer, copie e cole no seu README.md onde diz Live demo:.
+
+
+
+
+
+

@@ -1,0 +1,6 @@
+streamlit
+pandas
+numpy
+scikit-learn
+joblib
+# adicione aqui outras bibliotecas que seu código usa

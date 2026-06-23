@@ -1,9 +1,16 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-import joblib
-import os
 from sklearn.metrics.pairwise import cosine_similarity
+import os
+import joblib
+import numpy as np
+import pandas as pd
+import streamlit as st
+import sys
+import sklearn
+
+# --- PATCH DE COMPATIBILIDADE (ADICIONE ISSO AQUI) ---
+import sklearn.ensemble._gb_losses as _gb_losses
+sys.modules['sklearn.ensemble._loss'] = _gb_losses
+# -----------------------------------------------------
 
 # Configuração da página do Streamlit
 st.set_page_config(

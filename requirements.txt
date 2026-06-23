@@ -1,6 +1,6 @@
 streamlit
 pandas
 numpy
-scikit-learn==1.6.0
+scikit-learn
 joblib
 # adicione aqui outras bibliotecas que seu código usa

@@ -1,154 +1,163 @@
-from sklearn.metrics.pairwise import cosine_similarity
-import os
-import joblib
-import numpy as np
-import pandas as pd
-import streamlit as st
 import sys
-import sklearn
+import os
 
-# --- PATCH DE COMPATIBILIDADE (ADICIONE ISSO AQUI) ---
-import sklearn.ensemble._gb_losses as _gb_losses
-sys.modules['sklearn.ensemble._loss'] = _gb_losses
-# -----------------------------------------------------
+# ==============================================================================
+# 🛠️ PASSO 0: PATCH DE COMPATIBILIDADE (CORREÇÃO DO ERRO _loss)
+# ==============================================================================
+# Este bloco resolve o erro "No module named '_loss'" que acontece pela
+# diferença de versões entre o Google Colab e o Streamlit Cloud.
+try:
+    import sklearn.ensemble._gb_losses as _gb_losses
+    sys.modules['sklearn.ensemble._loss'] = _gb_losses
+except:
+    pass
 
-# Configuração da página do Streamlit
+# ==============================================================================
+# 📦 PASSO 1: IMPORTAÇÃO DAS BIBLIOTECAS
+# ==============================================================================
+import streamlit as st
+import pandas as pd
+import numpy as np
+import joblib
+from sklearn.metrics.pairwise import cosine_similarity
+
+# Configuração visual da página
 st.set_page_config(
-    page_title="JobMatch AI - Recrutamento Inteligente",
+    page_title="JobMatch AI - Recomendação Inteligente",
     page_icon="🤖",
     layout="wide"
 )
 
 # ==============================================================================
-# FUNÇÃO CORRIGIDA PARA CARREGAR OS ARQUIVOS DA IA
+# 🧠 PASSO 2: CARREGAMENTO DOS MODELOS DE IA
 # ==============================================================================
 
 
 @st.cache_resource
-def carregar_componentes():
-    # Descobre a pasta onde o script app.py está a rodar na nuvem
-    diretorio_atual = os.path.dirname(os.path.abspath(__file__))
+def carregar_arquivos_ia():
+    """Carrega os modelos treinados e a base de vagas do GitHub"""
+    # Descobre onde o script está rodando para não errar o caminho dos arquivos
+    diretorio = os.path.dirname(os.path.abspath(__file__))
 
-    # Mapeia o caminho exato para cada arquivo na raiz do repositório
-    modelo_cls = joblib.load(os.path.join(
-        diretorio_atual, 'modelo_classificacao.pkl'))
-    modelo_reg = joblib.load(os.path.join(
-        diretorio_atual, 'modelo_regressao.pkl'))
-    vec = joblib.load(os.path.join(diretorio_atual, 'vectorizer.pkl'))
-    vec_vaga = joblib.load(os.path.join(
-        diretorio_atual, 'vectorizer_vaga.pkl'))
-    df_vagas = pd.read_csv(os.path.join(diretorio_atual, 'base_vagas.csv'))
+    try:
+        # Carrega os arquivos .pkl (Cérebros da IA)
+        modelo_cls = joblib.load(os.path.join(
+            diretorio, 'modelo_classificacao.pkl'))
+        modelo_reg = joblib.load(os.path.join(
+            diretorio, 'modelo_regressao.pkl'))
+        vec = joblib.load(os.path.join(diretorio, 'vectorizer.pkl'))
+        vec_vaga = joblib.load(os.path.join(diretorio, 'vectorizer_vaga.pkl'))
 
-    return modelo_cls, modelo_reg, vec, vec_vaga, df_vagas
+        # Carrega a base de dados das vagas
+        df_vagas = pd.read_csv(os.path.join(diretorio, 'base_vagas.csv'))
+
+        return modelo_cls, modelo_reg, vec, vec_vaga, df_vagas, True, ""
+    except Exception as e:
+        return None, None, None, None, None, False, str(e)
 
 
-try:
-    modelo_classificacao, modelo_regressao, vectorizer, vectorizer_vaga, df_vagas = carregar_componentes()
-    arquivos_carregados = True
-except Exception as e:
-    arquivos_carregados = False
-    erro_detalhado = str(e)
+# Executa o carregamento
+modelo_classificacao, modelo_regressao, vectorizer, vectorizer_vaga, df_vagas, sucesso, erro_msg = carregar_arquivos_ia()
 
 # ==============================================================================
-# INTERFACE DO USUÁRIO (FRONTEND)
+# 🎨 PASSO 3: INTERFACE VISUAL (FRONTEND)
 # ==============================================================================
 st.title("🤖 JobMatch AI")
-st.subheader("Análise Inteligente de Compatibilidade de Currículos & Vagas")
+st.subheader("Sistema Inteligente de Recomendação de Vagas e Candidatos")
 st.markdown("---")
 
-if not arquivos_carregados:
-    st.error("⚠️ ERRO: Arquivos de IA não encontrados na mesma pasta do script!")
-    st.info(f"**Detalhe do erro técnico:** {erro_detalhado}")
+if not sucesso:
+    st.error("⚠️ Erro ao carregar os arquivos de Inteligência Artificial.")
+    st.info(f"Detalhe técnico para suporte: {erro_msg}")
 else:
-    # Divisão da tela em duas colunas
-    col1, col2 = st.columns([1, 2])
+    # Criando duas colunas na tela
+    col_esq, col_dir = st.columns([1, 2])
 
-    with col1:
-        st.header("📝 Perfil do Candidato")
-        perfil_usuario = st.text_area(
-            "Cole seu Currículo ou Resumo Profissional aqui:",
-            height=300,
-            placeholder="Exemplo: Sou especialista em dados, programo em Python e crio modelos de Machine Learning..."
+    with col_esq:
+        st.header("📝 Seu Perfil")
+        curriculo_texto = st.text_area(
+            "Cole aqui o texto do seu currículo ou resumo profissional:",
+            height=350,
+            placeholder="Ex: Sou analista de dados com experiência em Python, SQL e Power BI..."
         )
+        botao = st.button("🚀 Analisar Compatibilidade")
 
-        botao_analisar = st.button("🚀 Procurar Vagas Ideais")
+    with col_dir:
+        st.header("🎯 Vagas Recomendadas (Top-5)")
 
-    with col2:
-        st.header("🎯 Vagas Recomendadas e Análise")
-
-        if botao_analisar and perfil_usuario.strip() != "":
+        if botao and curriculo_texto.strip() != "":
             resultados = []
 
-            for idx, linha in df_vagas.iterrows():
-                # Preparação do texto combinado para o classificador
-                texto_combinado = perfil_usuario + \
-                    " [SEP] " + str(linha['descricao_vaga'])
-                vetor_comb = vectorizer.transform([texto_combinado])
+            # Loop para analisar cada vaga da nossa base de dados
+            for _, vaga in df_vagas.iterrows():
+                # 1. Preparar texto para Classificação (Fit/No Fit)
+                texto_entrada = curriculo_texto + \
+                    " [SEP] " + str(vaga['descricao_vaga'])
+                vetor_entrada = vectorizer.transform([texto_entrada])
 
-                classificacao = modelo_classificacao.predict(vetor_comb)[0]
-                probabilidade = modelo_classificacao.predict_proba(vetor_comb)[
+                # Predição de Classificação e Score
+                fit_binario = modelo_classificacao.predict(vetor_entrada)[0]
+                score_match = modelo_classificacao.predict_proba(vetor_entrada)[
                     0][1]
 
-                # Cálculo de Similaridade por Cosseno
-                vetor_usuario_sim = vectorizer_vaga.transform([perfil_usuario])
-                vetor_vaga_sim = vectorizer_vaga.transform(
-                    [str(linha['descricao_vaga'])])
-                sim_cosseno = cosine_similarity(
-                    vetor_usuario_sim, vetor_vaga_sim)[0][0]
+                # 2. Similaridade de Cosseno (Para o Ranking)
+                vetor_curr = vectorizer_vaga.transform([curriculo_texto])
+                vetor_vaga = vectorizer_vaga.transform(
+                    [str(vaga['descricao_vaga'])])
+                sim_cosseno = cosine_similarity(vetor_curr, vetor_vaga)[0][0]
 
-                # Estimativa Salarial usando o Regressor
-                vetor_vaga_reg = vectorizer_vaga.transform(
-                    [str(linha['descricao_vaga'])])
-                salario_previsto = modelo_regressao.predict(vetor_vaga_reg)[0]
+                # 3. Estimativa Salarial (Regressão)
+                salario_estimado = modelo_regressao.predict(vetor_vaga)[0]
 
-                # Análise de Habilidades Faltantes
+                # 4. Análise de Skills (Gaps)
                 skills_vaga = [s.strip().lower()
-                               for s in str(linha['skills_exigidas']).split(',')]
-                skills_faltantes = [
-                    skill for skill in skills_vaga if skill not in perfil_usuario.lower()]
-                skills_compativeis = [
-                    skill for skill in skills_vaga if skill in perfil_usuario.lower()]
+                               for s in str(vaga['skills_exigidas']).split(',')]
+                faltantes = [
+                    s for s in skills_vaga if s not in curriculo_texto.lower()]
+                alinhadas = [
+                    s for s in skills_vaga if s in curriculo_texto.lower()]
 
                 resultados.append({
-                    'titulo': linha['titulo_vaga'],
-                    'descricao': linha['descricao_vaga'],
-                    'fit_original': classificacao,
-                    'score': probabilidade,
-                    'similaridade': sim_cosseno,
-                    'salario': salario_previsto,
-                    'skills_faltantes': skills_faltantes,
-                    'skills_compativeis': skills_compativeis
+                    'titulo': vaga['titulo_vaga'],
+                    'descricao': vaga['descricao_vaga'],
+                    'status': "🟢 FIT" if fit_binario == 1 else "🔴 NO FIT",
+                    'score': score_match * 100,
+                    'salario': salario_estimado,
+                    'skills_faltantes': faltantes,
+                    'skills_ok': alinhadas
                 })
 
-            df_resultados = pd.DataFrame(resultados)
-            df_top5 = df_resultados.sort_values(
+            # Ordenar e mostrar as Top-5 melhores vagas
+            df_res = pd.DataFrame(resultados).sort_values(
                 by='score', ascending=False).head(5)
 
-            for idx, vaga in df_top5.iterrows():
-                if vaga['fit_original'] == 1:
-                    status_tag = "🟢 **FIT CONFIRMADO**"
-                else:
-                    status_tag = "🔴 **NO FIT**"
-
-                with st.expander(f"💼 {vaga['titulo']} — (Score: {vaga['score']*100:.1f}%)"):
-                    st.write(f"**Status da Classificação:** {status_tag}")
+            for _, r in df_res.iterrows():
+                with st.expander(f"💼 {r['titulo']} — Score: {r['score']:.1f}%"):
+                    st.write(f"**Resultado da Classificação:** {r['status']}")
                     st.write(
-                        f"**Estimativa da Faixa Salarial:** R$ {vaga['salario']:,.2f}")
-                    st.write(f"**Descrição da Posição:** {vaga['descricao']}")
+                        f"**Estimativa Salarial:** R$ {r['salario']:,.2f}")
+                    st.write(f"**Descrição:** {r['descricao']}")
 
                     st.markdown("---")
-                    st.subheader("📊 Diagnóstico de Skills")
-
                     c1, c2 = st.columns(2)
                     with c1:
                         st.success(
-                            f"✔️ **Skills Alinhadas:** {', '.join(vaga['skills_compativeis']) if vaga['skills_compativeis'] else 'Nenhuma identificada'}")
+                            f"✅ **Skills Identificadas:** {', '.join(r['skills_ok'])}")
                     with c2:
                         st.error(
-                            f"❌ **Skills Faltantes:** {', '.join(vaga['skills_faltantes']) if vaga['skills_faltantes'] else 'Nenhuma! Perfil Completo!'}")
+                            f"❌ **Skills Faltantes:** {', '.join(r['skills_faltantes'])}")
 
-                    if vaga['skills_faltantes']:
-                        st.info(
-                            f"💡 **Sugestão de Desenvolvimento:** Para aumentar suas chances, foque em estudar e adicionar projetos práticos voltados para: *{', '.join(vaga['skills_faltantes'])}*.")
+                    if r['skills_faltantes']:
+                        st.warning(
+                            f"💡 **Dica de Estudo:** Para esta vaga, sugerimos desenvolver conhecimentos em: *{', '.join(r['skills_faltantes'])}*.")
+
+        elif botao:
+            st.warning(
+                "⚠️ Por favor, cole o texto do seu currículo antes de analisar.")
         else:
-            st.info("💡 Insira o seu perfil ou currículo na barra lateral esquerda e clique em 'Procurar Vagas Ideais' para executar o motor de Machine Learning.")
+            st.info(
+                "Aguardando seu currículo para iniciar o processamento de Machine Learning...")
+
+# Rodapé do projeto
+st.markdown("---")
+st.caption("JobMatch AI - Projeto Final E2E Machine Learning | 2026")
